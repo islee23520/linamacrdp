@@ -2,7 +2,7 @@
 //! The client captures audio; this processor negotiates 48 kHz mono 16-bit PCM
 //! and delivers the client's PCM bytes to a per-connection sink.
 
-use ironrdp_core::{Encode, EncodeResult, WriteCursor, impl_as_any};
+use ironrdp_core::{impl_as_any, Encode, EncodeResult, WriteCursor};
 use ironrdp_dvc::{DvcEncode, DvcMessage, DvcProcessor, DvcServerProcessor};
 use ironrdp_pdu::PduResult;
 use tracing::warn;
@@ -151,6 +151,9 @@ impl DvcProcessor for AudinServer {
         }
         let (id, body) = (payload[0], &payload[1..]);
         match (self.state, id) {
+            // FreeRDP announces an incoming Formats packet before sending
+            // the packet itself (audin_process_formats in audin_main.c).
+            (State::Formats, DATA_INCOMING_ID) if body.is_empty() => Ok(Vec::new()),
             (State::Version, VERSION_ID) if body.len() == 4 => {
                 let version = u32::from_le_bytes([body[0], body[1], body[2], body[3]]);
                 if version == 0 || version > VERSION {
@@ -261,6 +264,7 @@ mod tests {
         assert_eq!(advertised[0][0], FORMATS_ID);
         assert_eq!(&advertised[0][1..9], &[1, 0, 0, 0, 0, 0, 0, 0]);
         assert_eq!(&advertised[0][9..], &PCM_FORMAT);
+        assert!(send(receiver, DATA_INCOMING_ID, &[]).is_empty());
         let mut list = Vec::new();
         list.extend_from_slice(&count.to_le_bytes());
         list.extend_from_slice(&size.to_le_bytes());
