@@ -1,4 +1,5 @@
 import AppKit
+import Security
 import UniformTypeIdentifiers
 
 // macrdp Controller: a menu-bar app that controls the macrdp LaunchAgent
@@ -298,10 +299,16 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // MARK: - Keychain password onboarding
 
     /// The server (run headless by launchd) reads its account password from the
-    /// Keychain via the `security` CLI, so we write it the same way — keeping the
-    /// item's access context as /usr/bin/security so no read-time prompt appears.
+    /// Keychain via the `security` CLI. Query only metadata here; never expose
+    /// the password in a process argument or diagnostic output.
     func hasKeychainPassword() -> Bool {
-        run("/usr/bin/security", ["find-generic-password", "-s", "macrdp", "-a", NSUserName()]).code == 0
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "macrdp",
+            kSecAttrAccount as String: NSUserName(),
+            kSecReturnAttributes as String: true,
+        ]
+        return SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess
     }
 
     @discardableResult
@@ -319,10 +326,23 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         a.window.initialFirstResponder = field
         NSApp.activate(ignoringOtherApps: true)
         guard a.runModal() == .alertFirstButtonReturn, !field.stringValue.isEmpty else { return false }
-        let r = run("/usr/bin/security",
-                    ["add-generic-password", "-U", "-s", "macrdp", "-a", NSUserName(),
-                     "-w", field.stringValue])
-        if r.code != 0 {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "macrdp",
+            kSecAttrAccount as String: NSUserName(),
+        ]
+        guard let password = field.stringValue.data(using: .utf8) else { return false }
+        let status: OSStatus
+        if SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess {
+            status = SecItemUpdate(query as CFDictionary,
+                                   [kSecValueData as String: password] as CFDictionary)
+        } else {
+            var item = query
+            item[kSecValueData as String] = password
+            status = SecItemAdd(item as CFDictionary, nil)
+        }
+        field.stringValue = ""
+        if status != errSecSuccess {
             alert(style: .critical, "Couldn't save password", "Keychain returned an error.")
             return false
         }
