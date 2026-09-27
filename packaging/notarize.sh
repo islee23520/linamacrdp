@@ -8,7 +8,8 @@
 #     is not "-").
 #   * A notarytool keychain profile created once with:
 #       xcrun notarytool store-credentials "<profile>" \
-#         --apple-id you@example.com --team-id TEAMID --password <app-specific-pw>
+#         --apple-id you@example.com --team-id TEAMID
+#     Enter the app-specific password at the secure prompt, not on the command line.
 #
 # Usage:
 #   NOTARY_PROFILE="<profile>" packaging/notarize.sh /path/to/Foo.{app,dmg,pkg}
@@ -18,8 +19,8 @@ TARGET="${1:?usage: notarize.sh <app|dmg|pkg>}"
 : "${NOTARY_PROFILE:?set NOTARY_PROFILE (see: xcrun notarytool store-credentials)}"
 [ -e "$TARGET" ] || { echo "no such artifact: $TARGET" >&2; exit 1; }
 
-WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
+WORK="${EVIDENCE_DIR:-$(pwd)/.omo/evidence/notarization}"
+mkdir -p "$WORK"
 
 # notarytool wants a single file. A .app is a directory, so zip it; .dmg/.pkg
 # submit directly.
@@ -37,7 +38,8 @@ case "$TARGET" in
 esac
 
 echo "==> submitting to Apple notary service (waits for the verdict)"
-xcrun notarytool submit "$SUBMIT" --keychain-profile "$NOTARY_PROFILE" --wait
+xcrun notarytool submit "$SUBMIT" --keychain-profile "$NOTARY_PROFILE" --wait \
+    --output-format json > "$WORK/$(basename "$TARGET").notary.json"
 
 echo "==> stapling the ticket onto $(basename "$TARGET")"
 xcrun stapler staple "$TARGET"
@@ -47,9 +49,9 @@ echo "==> Gatekeeper assessment"
 if [ "$SPCTL_TYPE" = "open" ]; then
     # A DMG/pkg needs an explicit assessment context, or spctl reports
     # "Insufficient Context" even when notarization + stapling succeeded.
-    spctl -a -vvv --type open --context context:primary-signature "$TARGET" || true
+    spctl -a -vvv --type open --context context:primary-signature "$TARGET"
 else
-    spctl -a -vvv --type exec "$TARGET" || true
+    spctl -a -vvv --type exec "$TARGET"
 fi
 
 echo "notarized + stapled: $TARGET"
