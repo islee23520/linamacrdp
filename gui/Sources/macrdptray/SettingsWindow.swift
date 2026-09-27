@@ -259,6 +259,11 @@ private struct ConnectionTab: View {
                     Spacer()
                     Text(model.bindDisplay).foregroundColor(.secondary)
                 }
+                Stepper(value: Binding(
+                    get: { model.port },
+                    set: { model.setPort($0) }), in: 1...65535) {
+                    Text("RDP port: \(model.port)")
+                }
                 Text("Off = loopback only (127.0.0.1), reachable from this Mac only.")
                     .font(.caption).foregroundColor(.secondary)
             }

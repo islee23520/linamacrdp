@@ -131,8 +131,14 @@ final class SettingsModel: ObservableObject {
 
     var allowNetwork: Bool { bindDisplay.hasPrefix("0.0.0.0") }
 
+    var port: Int { Int(bindDisplay.split(separator: ":").last ?? "3390") ?? 3390 }
+
+    func setPort(_ value: Int) {
+        guard (1...65535).contains(value) else { return }
+        setString("BIND", "\(allowNetwork ? "0.0.0.0" : "127.0.0.1"):\(value)")
+    }
+
     func setAllowNetwork(_ on: Bool) {
-        let port = bindDisplay.split(separator: ":").last.map(String.init) ?? "3390"
         setString("BIND", "\(on ? "0.0.0.0" : "127.0.0.1"):\(port)")
     }
 
