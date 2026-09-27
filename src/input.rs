@@ -605,6 +605,10 @@ mod macos {
         right_down: bool,
         middle_down: bool,
         mods: ModifierState,
+        // Once this session uses Caps Lock to switch input sources, an RDP
+        // Synchronize PDU must not reinterpret the client's lock LED as
+        // macOS AlphaShift and uppercase the next English keystroke.
+        korean_toggle_active: bool,
         // `None` → use CGDisplay::main() bounds; `Some(id)` → look up
         // that specific display. Re-queried (through a short TTL cache —
         // see `target_bounds`) so a mid-session bounds change (e.g.
@@ -714,6 +718,7 @@ mod macos {
                 right_down: false,
                 middle_down: false,
                 mods: ModifierState::default(),
+                korean_toggle_active: false,
                 target_display_id,
                 cached_bounds: None,
                 bounds_cached_at: Instant::now(),
@@ -779,6 +784,9 @@ mod macos {
         /// from the first keystroke. (Num/Scroll/Kana Lock are kernel-side
         /// concepts on Windows that macOS doesn't model.)
         fn synchronize(&mut self, sync: SynchronizeFlags) {
+            if self.korean_toggle_active {
+                return;
+            }
             let want_caps = sync.contains(SynchronizeFlags::CAPS_LOCK);
             if want_caps != self.mods.caps_lock {
                 debug!(
@@ -843,7 +851,12 @@ mod macos {
                 if vk == VK_CAPS_LOCK && down && crate::keyboard_layout::toggle_korean_english() {
                     // A remote Caps Lock press switches the actual macOS input
                     // source instead of uppercasing the following English text.
+                    self.korean_toggle_active = true;
+                    let was_caps = self.mods.caps_lock;
                     self.mods.caps_lock = false;
+                    if was_caps {
+                        self.post_flags_changed(VK_CAPS_LOCK);
+                    }
                     return;
                 }
                 if vk == VK_CAPS_LOCK && !down {
