@@ -32,9 +32,9 @@ pub fn is_translatable_keycode(vk: u16) -> bool {
 }
 
 #[cfg(target_os = "macos")]
-pub use macos::toggle_korean_english;
-#[cfg(target_os = "macos")]
 pub use macos::KeyboardLayout;
+#[cfg(target_os = "macos")]
+pub use macos::{korean_input_enabled, toggle_korean_english};
 
 #[cfg(target_os = "macos")]
 mod macos {
@@ -89,48 +89,64 @@ mod macos {
     const MOD_CAPS: u32 = 0x04;
     const MOD_OPTION: u32 = 0x08;
 
-    /// Switch the active macOS input source when Korean is enabled. Returns
-    /// false when Korean is not installed/enabled so Caps Lock keeps its usual
-    /// modifier behavior for other users.
-    pub fn toggle_korean_english() -> bool {
-        const KOREAN: &str = "com.apple.inputmethod.Korean.2SetKorean";
-        const ENGLISH: &str = "com.apple.keylayout.ABC";
+    const KOREAN: &str = "com.apple.inputmethod.Korean.2SetKorean";
+    const ENGLISH: &str = "com.apple.keylayout.ABC";
+
+    /// Runs `f` on the enabled input source with `id`; `None` when the user
+    /// has not enabled it (include_all=0 never returns disabled sources).
+    fn with_enabled_source<T>(id: &str, f: impl FnOnce(TISInputSourceRef) -> T) -> Option<T> {
         unsafe {
+            let key = CFString::wrap_under_get_rule(kTISPropertyInputSourceID);
+            let value = CFString::new(id);
+            let properties =
+                CFDictionary::from_CFType_pairs(&[(key.as_CFType(), value.as_CFType())]);
+            let sources =
+                TISCreateInputSourceList(properties.as_concrete_TypeRef() as *const c_void, 0);
+            if sources.is_null() {
+                return None;
+            }
+            let out = if CFArrayGetCount(sources) > 0 {
+                Some(f(CFArrayGetValueAtIndex(sources, 0) as TISInputSourceRef))
+            } else {
+                None
+            };
+            CFRelease(sources);
+            out
+        }
+    }
+
+    /// True when the Korean 2-Set input method is enabled on this Mac, in
+    /// which case remote Caps Lock acts as the Korean/English toggle.
+    pub fn korean_input_enabled() -> bool {
+        with_enabled_source(KOREAN, |_| ()).is_some()
+    }
+
+    /// Switch between Korean 2-Set and ABC. Returns false when the target
+    /// source is not enabled or selection failed.
+    pub fn toggle_korean_english() -> bool {
+        let current_id = unsafe {
             let current = TISCopyCurrentKeyboardInputSource();
             if current.is_null() {
                 return false;
             }
             let property = TISGetInputSourceProperty(current, kTISPropertyInputSourceID);
-            let current_id = if property.is_null() {
+            let id = if property.is_null() {
                 None
             } else {
                 Some(CFString::wrap_under_get_rule(property as CFStringRef).to_string())
             };
             CFRelease(current as *const c_void);
-
-            let target = if current_id.as_deref() == Some(KOREAN) {
-                ENGLISH
-            } else {
-                KOREAN
-            };
-            let key = CFString::wrap_under_get_rule(kTISPropertyInputSourceID);
-            let value = CFString::new(target);
-            let properties =
-                CFDictionary::from_CFType_pairs(&[(key.as_CFType(), value.as_CFType())]);
-            // include_all=0: never select a Korean source the user has disabled.
-            let sources =
-                TISCreateInputSourceList(properties.as_concrete_TypeRef() as *const c_void, 0);
-            if sources.is_null() {
-                return false;
-            }
-            let selected = if CFArrayGetCount(sources) > 0 {
-                TISSelectInputSource(CFArrayGetValueAtIndex(sources, 0) as TISInputSourceRef) == 0
-            } else {
-                false
-            };
-            CFRelease(sources);
-            selected
-        }
+            id
+        };
+        let target = if current_id.as_deref() == Some(KOREAN) {
+            ENGLISH
+        } else {
+            KOREAN
+        };
+        let ok = with_enabled_source(target, |s| unsafe { TISSelectInputSource(s) } == 0)
+            .unwrap_or(false);
+        tracing::info!(from = ?current_id, to = target, ok, "remote input source toggle");
+        ok
     }
 
     /// A resolved keyboard layout we can translate keystrokes against.
