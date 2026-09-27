@@ -301,7 +301,7 @@ mod ffi {
         pub(super) static kVTCompressionPropertyKey_ProfileLevel: CFStringRef;
         pub(super) static kVTCompressionPropertyKey_AllowFrameReordering: CFStringRef;
         pub(super) static kVTCompressionPropertyKey_MaxFrameDelayCount: CFStringRef;
-        pub(super) static kVTProfileLevel_H264_Baseline_AutoLevel: CFStringRef;
+        pub(super) static kVTProfileLevel_H264_ConstrainedBaseline_AutoLevel: CFStringRef;
         pub(super) static kVTEncodeFrameOptionKey_ForceKeyFrame: CFStringRef;
         // Color-space signaling so the encoded SPS VUI describes its color
         // space explicitly instead of leaving the decoder to guess (which is
@@ -496,10 +496,13 @@ mod ffi {
             // change (keystroke / caret) renders "one behind" until you type
             // again. Best-effort: ignore if a VT version rejects the value.
             let _ = set_i32(session, kVTCompressionPropertyKey_MaxFrameDelayCount, 0);
+            // Constrained Baseline, not plain Baseline: FFmpeg's VAAPI hwaccel
+            // (FreeRDP on Linux) refuses plain Baseline and then drops every
+            // frame. Same coding tools, so mstsc is unaffected.
             set_string(
                 session,
                 kVTCompressionPropertyKey_ProfileLevel,
-                kVTProfileLevel_H264_Baseline_AutoLevel,
+                kVTProfileLevel_H264_ConstrainedBaseline_AutoLevel,
             )?;
             // Tag the bitstream's color space explicitly (BT.709). Without this
             // VideoToolbox leaves the SPS VUI under-specified and each decoder
