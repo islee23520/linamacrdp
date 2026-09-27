@@ -220,8 +220,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // MARK: - Headless entry (scripted/MDM deploy + testing)
 
     /// Runs the install logic without the GUI. `--print-paths` is side-effect
-    /// free; `--install-agent` locates the server, writes + loads the agent
-    /// (assumes the Keychain password is set separately for unattended deploys).
+    /// free; `--install-agent` requires a Keychain credential before writing
+    /// or loading the agent.
     func runHeadless(_ args: [String]) -> Int32 {
         if args.contains("--print-paths") {
             print("label:      \(label)")
@@ -238,15 +238,16 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 "error: macrdp.app not found next to the controller or in /Applications\n".utf8))
             return 1
         }
+        guard hasKeychainPassword() else {
+            FileHandle.standardError.write(Data(
+                "error: macrdp Keychain password missing; use the controller's Set Password dialog or run `security add-generic-password -U -s macrdp -a \(NSUserName()) -W` in your own terminal\n".utf8))
+            return 1
+        }
         ensureConfigExists()
         installLaunchAgent(serverApp: serverApp)
         ensureLoaded()
         _ = run("/bin/launchctl", ["kickstart", "-k", service])
         print("installed: \(plistURL.path) -> \(serverApp.path)")
-        if !hasKeychainPassword() {
-            print("note: Keychain password not set — store it with:")
-            print("  security add-generic-password -U -s macrdp -a \(NSUserName()) -w '<password>'")
-        }
         return 0
     }
 
