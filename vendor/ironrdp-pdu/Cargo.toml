@@ -1,0 +1,54 @@
+[package]
+name = "ironrdp-pdu"
+version = "0.9.0"
+readme = "README.md"
+description = "RDP PDU encoding and decoding"
+# Vendored copy of upstream ironrdp-pdu (Devolutions/IronRDP@a5d1c682, the same
+# rev as the git pins in the root Cargo.toml). Workspace-inherited fields are
+# inlined because we live outside the IronRDP workspace. See CLAUDE.md here for
+# the divergence log.
+edition = "2024"
+rust-version = "1.94"
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/Devolutions/IronRDP"
+repository = "https://github.com/Devolutions/IronRDP"
+authors = ["Devolutions Inc. <infos@devolutions.net>", "Teleport <goteleport.com>"]
+keywords = ["rdp", "remote-desktop", "network", "client", "protocol"]
+categories = ["network-programming"]
+
+[lib]
+doctest = false
+test = false
+
+[features]
+default = []
+std = ["alloc", "ironrdp-error/std", "ironrdp-core/std"]
+alloc = ["ironrdp-core/alloc", "ironrdp-error/alloc"]
+qoi = []
+qoiz = ["qoi"]
+arbitrary = ["alloc", "dep:arbitrary", "bitflags/arbitrary"]
+
+[dependencies]
+bitflags = "2.11"
+ironrdp-core = { version = "0.2", features = ["std"] } # public
+ironrdp-error = "0.2" # public
+arbitrary = { version = "1", features = ["derive"], optional = true }
+tap = "1"
+
+# TODO: get rid of these dependencies (related code should probably go into another crate)
+bit_field = "0.10"
+byteorder = "1.5" # TODO: remove
+der-parser = "10.0"
+hmac = { version = "0.12", default-features = false }
+md5 = { package = "md-5", version = "0.10" }
+num-bigint = "0.4"
+num-derive = "0.4" # TODO: remove
+num-integer = "0.1"
+num-traits = "0.2" # TODO: remove
+sha1 = "0.10"
+x509-cert = { version = "0.2", default-features = false, features = ["std"] }
+pkcs1 = "0.7"
+
+[dev-dependencies]
+expect-test = "1"
+

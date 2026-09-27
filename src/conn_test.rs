@@ -428,6 +428,36 @@ async fn negotiate(
         .await
 }
 
+/// Korean-layout Windows mstsc sends keyboardType 8 in Client Core Data.
+/// Upstream ironrdp-pdu rejected it ("invalid keyboard type"), killing every
+/// Windows connection right after a successful login; the vendored copy
+/// accepts it.
+#[test]
+fn client_core_data_accepts_korean_keyboard_type() {
+    use ironrdp_pdu::gcc::{
+        ClientCoreData, ClientCoreOptionalData, ColorDepth, KeyboardType, RdpVersion,
+        SecureAccessSequence,
+    };
+    let core = ClientCoreData {
+        version: RdpVersion::V5_PLUS,
+        desktop_width: 1920,
+        desktop_height: 1080,
+        color_depth: ColorDepth::Bpp8,
+        sec_access_sequence: SecureAccessSequence::Del,
+        keyboard_layout: 0x0412,
+        client_build: 26100,
+        client_name: "DESKTOP".to_owned(),
+        keyboard_type: KeyboardType::Korean,
+        keyboard_subtype: 0,
+        keyboard_functional_keys_count: 12,
+        ime_file_name: String::new(),
+        optional_data: ClientCoreOptionalData::default(),
+    };
+    let bytes = ironrdp_core::encode_vec(&core).expect("encode");
+    let decoded: ClientCoreData = ironrdp_core::decode(&bytes).expect("keyboardType 8 must decode");
+    assert_eq!(decoded.keyboard_type, KeyboardType::Korean);
+}
+
 #[tokio::test]
 async fn client_resolution_adopted_when_honored() -> anyhow::Result<()> {
     // Server display is 1024×768; client asks for 1920×1080. With honoring on,
