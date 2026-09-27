@@ -57,6 +57,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
             self?.refreshGlyph()
         }
+        requestMissingPermissions()
     }
 
     // MARK: - Agent state
@@ -149,6 +150,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             e.isEnabled = false
             menu.addItem(e)
         }
+        if st.pid != nil, !missingPermissions().isEmpty {
+            menu.addItem(item("⚠️ Grant permissions…", #selector(requestMissingPermissions)))
+        }
         menu.addItem(.separator())
 
         // Show the tabbed Settings window (where all the config options now live).
@@ -194,7 +198,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ensureLoaded()
         _ = run("/bin/launchctl", ["kickstart", "-k", service])
         refreshGlyph()
-        if firstInstall { remindPermissions() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
+            self?.requestMissingPermissions()
+        }
     }
 
     @objc func stop() {
@@ -352,16 +358,52 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc func setPassword() { promptAndStorePassword() }
 
-    func remindPermissions() {
-        let a = NSAlert()
-        a.messageText = "Grant macrdp two permissions"
-        a.informativeText = "macrdp needs Screen Recording (to share the display) and "
-            + "Accessibility (to forward keyboard/mouse). Enable macrdp.app in System "
-            + "Settings → Privacy & Security, then it'll work."
-        a.addButton(withTitle: "Open Privacy Settings")
-        a.addButton(withTitle: "Later")
+    /// Guards against stacking dialogs when launch, Start and the menu all ask.
+    var permissionFlowActive = false
+
+    /// Missing grants per the server's latest startup log lines.
+    func missingPermissions() -> [(name: String, open: () -> Void)] {
+        let ps = permissionStatus()
+        var missing: [(name: String, open: () -> Void)] = []
+        if ps.screen == false { missing.append(("Screen Recording", { self.openScreenRecording() })) }
+        if ps.accessibility == false { missing.append(("Accessibility", { self.openAccessibility() })) }
+        return missing
+    }
+
+    /// Walk the user through each missing grant: open its exact Settings pane,
+    /// then restart the server (TCC grants apply only to a fresh process) and
+    /// re-check. The server itself runs under launchd, where macOS shows no
+    /// prompt, so this GUI owns the request.
+    @objc func requestMissingPermissions() {
+        guard !permissionFlowActive, agentState().pid != nil else { return }
+        let missing = missingPermissions()
+        guard let first = missing.first else { return }
+        permissionFlowActive = true
         NSApp.activate(ignoringOtherApps: true)
-        if a.runModal() == .alertFirstButtonReturn { openScreenRecording() }
+        let a = NSAlert()
+        a.messageText = "macrdp needs \(first.name) permission"
+        a.informativeText = (first.name == "Screen Recording"
+            ? "Needed to share this Mac's screen with RDP clients."
+            : "Needed to forward keyboard and mouse from RDP clients.")
+            + " Turn on macrdp in the list that opens, then come back and click Restart macrdp."
+        a.addButton(withTitle: "Open Settings")
+        a.addButton(withTitle: "Later")
+        guard a.runModal() == .alertFirstButtonReturn else { permissionFlowActive = false; return }
+        first.open()
+        let b = NSAlert()
+        b.messageText = "Turned on macrdp for \(first.name)?"
+        b.informativeText = "macrdp restarts so the new permission takes effect."
+        b.addButton(withTitle: "Restart macrdp")
+        b.addButton(withTitle: "Later")
+        NSApp.activate(ignoringOtherApps: true)
+        guard b.runModal() == .alertFirstButtonReturn else { permissionFlowActive = false; return }
+        _ = run("/bin/launchctl", ["kickstart", "-k", service])
+        // Give the fresh process time to log its permission state, then continue
+        // with whatever is still missing.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
+            self?.permissionFlowActive = false
+            self?.requestMissingPermissions()
+        }
     }
 
     func alert(style: NSAlert.Style, _ message: String, _ info: String) {
