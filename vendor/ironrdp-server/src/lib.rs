@@ -6,7 +6,6 @@ pub use {tokio, tokio_rustls};
 
 mod macros;
 
-mod audin;
 pub mod autodetect;
 mod builder;
 mod capabilities;
@@ -27,7 +26,6 @@ mod rdpeusb;
 mod server;
 mod sound;
 
-pub use audin::{AUDIO_INPUT_CHANNEL_NAME, AudinSampleSink, AudinServer, AudinServerFactory};
 pub use clipboard::CliprdrServerFactory;
 pub use display::{
     BitmapUpdate, ColorPointer, DesktopSize, DisplayUpdate, Framebuffer, PixelFormat, RGBAPointer, RdpServerDisplay,
@@ -45,11 +43,11 @@ pub use multitransport::dtls::DtlsServerContext;
 pub use multitransport::listener::{ListenerConfig, UdpMultitransportListener};
 #[cfg(feature = "multitransport")]
 pub use multitransport::{
-    CookieRegistry, MultitransportProvider, TunnelSender, encode_initiate_request, tunnel_channel,
+    encode_initiate_request, tunnel_channel, CookieRegistry, MultitransportProvider, TunnelSender,
 };
 pub use rdcamera::{
-    CameraSampleSink, CameraServerMessage, RDCAMERA_CHANNEL_NAME, RdCameraDeviceProcessor, RdCameraServer,
-    RdCameraServerFactory,
+    CameraSampleSink, CameraServerMessage, RdCameraDeviceProcessor, RdCameraServer, RdCameraServerFactory,
+    RDCAMERA_CHANNEL_NAME,
 };
 pub use rdpdr::{
     AnnouncedDevice, DirEntry, RdpdrBackendFactory, RdpdrHandle, RdpdrServer, RdpdrServerFactory, RdpdrServerHandler,
@@ -57,12 +55,12 @@ pub use rdpdr::{
     SCARD_SHARE_EXCLUSIVE, SCARD_SHARE_SHARED, SCARD_UNPOWER_CARD,
 };
 pub use rdpeusb::{
-    DeviceDescriptor, URBDRC_CHANNEL_NAME, UrbdrcServer, UrbdrcServerFactory, UrbdrcServerMessage, UsbDeviceCallback,
-    UsbHandle, UsbPipe,
+    DeviceDescriptor, UrbdrcServer, UrbdrcServerFactory, UrbdrcServerMessage, UsbDeviceCallback, UsbHandle, UsbPipe,
+    URBDRC_CHANNEL_NAME,
 };
 pub use server::{
-    ConnectionHandler, Credentials, PostConnectionAction, RdpServer, RdpServerOptions, RdpServerSecurity, ServerEvent,
-    ServerEventSender, tcp_srtt_ms,
+    tcp_srtt_ms, ConnectionHandler, Credentials, PostConnectionAction, RdpServer, RdpServerOptions, RdpServerSecurity,
+    ServerEvent, ServerEventSender,
 };
 pub use sound::{AudioWave, RdpsndServerHandler, RdpsndServerMessage, SoundServerFactory};
 

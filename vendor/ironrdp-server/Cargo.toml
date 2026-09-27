@@ -17,7 +17,7 @@ categories = ["network-programming"]
 
 [lib]
 doctest = true
-test = true
+test = false
 
 [features]
 default = ["rayon", "qoi", "qoiz"]

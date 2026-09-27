@@ -11,8 +11,8 @@ use super::gfx::GfxServerFactory;
 use super::handler::{KeyboardEvent, MouseEvent, RdpServerInputHandler};
 use super::server::{ConnectionHandler, RdpServer, RdpServerOptions, RdpServerSecurity};
 use crate::{
-    AudinServerFactory, DisplayUpdate, RdCameraServerFactory, RdpServerDisplayUpdates, RdpdrServerFactory,
-    SoundServerFactory, UrbdrcServerFactory,
+    DisplayUpdate, RdCameraServerFactory, RdpServerDisplayUpdates, RdpdrServerFactory, SoundServerFactory,
+    UrbdrcServerFactory,
 };
 
 pub struct WantsAddr {}
@@ -40,7 +40,6 @@ pub struct BuilderDone {
     rdpdr_factory: Option<Box<dyn RdpdrServerFactory>>,
     usb_factory: Option<Box<dyn UrbdrcServerFactory>>,
     camera_factory: Option<Box<dyn RdCameraServerFactory>>,
-    audin_factory: Option<Box<dyn AudinServerFactory>>,
     connection_handler: Option<Box<dyn ConnectionHandler>>,
     #[cfg(feature = "egfx")]
     gfx_factory: Option<Box<dyn GfxServerFactory>>,
@@ -139,7 +138,6 @@ impl RdpServerBuilder<WantsDisplay> {
                 rdpdr_factory: None,
                 usb_factory: None,
                 camera_factory: None,
-                audin_factory: None,
                 connection_handler: None,
                 codecs: server_codecs_capabilities(&[]).expect("can't panic for &[]"),
                 max_request_size: RdpServerOptions::DEFAULT_MAX_REQUEST_SIZE,
@@ -161,7 +159,6 @@ impl RdpServerBuilder<WantsDisplay> {
                 rdpdr_factory: None,
                 usb_factory: None,
                 camera_factory: None,
-                audin_factory: None,
                 connection_handler: None,
                 codecs: server_codecs_capabilities(&[]).expect("can't panic for &[]"),
                 max_request_size: RdpServerOptions::DEFAULT_MAX_REQUEST_SIZE,
@@ -213,12 +210,6 @@ impl RdpServerBuilder<BuilderDone> {
         self
     }
 
-    /// Enable server-direction `AUDIO_INPUT` microphone capture for each connection.
-    pub fn with_audin_factory(mut self, audin_factory: Option<Box<dyn AudinServerFactory>>) -> Self {
-        self.state.audin_factory = audin_factory;
-        self
-    }
-
     pub fn with_bitmap_codecs(mut self, codecs: BitmapCodecs) -> Self {
         self.state.codecs = codecs;
         self
@@ -257,7 +248,6 @@ impl RdpServerBuilder<BuilderDone> {
             self.state.rdpdr_factory,
             self.state.usb_factory,
             self.state.camera_factory,
-            self.state.audin_factory,
             self.state.connection_handler,
             #[cfg(feature = "egfx")]
             self.state.gfx_factory,

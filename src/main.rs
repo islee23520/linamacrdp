@@ -10,7 +10,6 @@
 
 mod aac;
 mod audio;
-mod audio_input;
 mod auth;
 mod auth_guard;
 mod avc444;
@@ -598,11 +597,6 @@ struct Args {
     /// docs/rdp-camera-redirection-feasibility.md.
     #[arg(long)]
     enable_camera_redirection: bool,
-
-    /// Accept the client's microphone over MS-RDPEAI and expose it through the
-    /// separately installed macrdp Microphone Core Audio driver.
-    #[arg(long)]
-    enable_microphone_redirection: bool,
 
     /// EXPERIMENTAL, opt-in (default OFF). Offer RDP UDP multitransport
     /// (MS-RDPEMT over reliable RDPEUDP) to clients that advertise it, and bind a
@@ -2267,9 +2261,6 @@ fn args_from_config(path: &Path) -> Result<Args> {
     if on("ENABLE_CAMERA_REDIRECTION", false) {
         argv.push("--enable-camera-redirection".into());
     }
-    if on("ENABLE_MICROPHONE_REDIRECTION", false) {
-        argv.push("--enable-microphone-redirection".into());
-    }
     if on("ENABLE_UDP_MULTITRANSPORT", false) {
         argv.push("--enable-udp-multitransport".into());
     }
@@ -3312,13 +3303,6 @@ async fn async_main() -> Result<()> {
             None
         };
 
-    let audin_factory: Option<Box<dyn ironrdp_server::AudinServerFactory>> =
-        if args.enable_microphone_redirection {
-            Some(Box::new(audio_input::MacAudin::new()?))
-        } else {
-            None
-        };
-
     // Auth hardening (Tier 1.2): per-IP rate-limit + lockout + audit log via the
     // server's pre-handshake/post-disconnect ConnectionHandler seam. On by default
     // (MACRDP_CONN_GUARD=0 disables).
@@ -3335,7 +3319,6 @@ async fn async_main() -> Result<()> {
         .with_rdpdr_factory(rdpdr_factory)
         .with_usb_factory(usb_factory)
         .with_camera_factory(camera_factory)
-        .with_audin_factory(audin_factory)
         .with_bitmap_codecs(bitmap_codecs())
         .with_gfx_factory(gfx_factory)
         .with_connection_handler(conn_handler)
