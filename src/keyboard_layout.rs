@@ -32,6 +32,8 @@ pub fn is_translatable_keycode(vk: u16) -> bool {
 }
 
 #[cfg(target_os = "macos")]
+pub use macos::toggle_korean_english;
+#[cfg(target_os = "macos")]
 pub use macos::KeyboardLayout;
 
 #[cfg(target_os = "macos")]
@@ -52,8 +54,10 @@ mod macos {
         static kTISPropertyUnicodeKeyLayoutData: CFStringRef;
         fn TISCreateInputSourceList(properties: *const c_void, include_all: u8) -> *const c_void;
         fn TISCopyInputSourceForLanguage(language: CFStringRef) -> TISInputSourceRef;
+        fn TISCopyCurrentKeyboardInputSource() -> TISInputSourceRef;
         fn TISCopyCurrentKeyboardLayoutInputSource() -> TISInputSourceRef;
         fn TISGetInputSourceProperty(source: TISInputSourceRef, key: CFStringRef) -> *const c_void;
+        fn TISSelectInputSource(source: TISInputSourceRef) -> i32;
         fn LMGetKbdType() -> u8;
         fn UCKeyTranslate(
             key_layout_ptr: *const c_void,
@@ -84,6 +88,50 @@ mod macos {
     const MOD_SHIFT: u32 = 0x02;
     const MOD_CAPS: u32 = 0x04;
     const MOD_OPTION: u32 = 0x08;
+
+    /// Switch the active macOS input source when Korean is enabled. Returns
+    /// false when Korean is not installed/enabled so Caps Lock keeps its usual
+    /// modifier behavior for other users.
+    pub fn toggle_korean_english() -> bool {
+        const KOREAN: &str = "com.apple.inputmethod.Korean.2SetKorean";
+        const ENGLISH: &str = "com.apple.keylayout.ABC";
+        unsafe {
+            let current = TISCopyCurrentKeyboardInputSource();
+            if current.is_null() {
+                return false;
+            }
+            let property = TISGetInputSourceProperty(current, kTISPropertyInputSourceID);
+            let current_id = if property.is_null() {
+                None
+            } else {
+                Some(CFString::wrap_under_get_rule(property as CFStringRef).to_string())
+            };
+            CFRelease(current as *const c_void);
+
+            let target = if current_id.as_deref() == Some(KOREAN) {
+                ENGLISH
+            } else {
+                KOREAN
+            };
+            let key = CFString::wrap_under_get_rule(kTISPropertyInputSourceID);
+            let value = CFString::new(target);
+            let properties =
+                CFDictionary::from_CFType_pairs(&[(key.as_CFType(), value.as_CFType())]);
+            // include_all=0: never select a Korean source the user has disabled.
+            let sources =
+                TISCreateInputSourceList(properties.as_concrete_TypeRef() as *const c_void, 0);
+            if sources.is_null() {
+                return false;
+            }
+            let selected = if CFArrayGetCount(sources) > 0 {
+                TISSelectInputSource(CFArrayGetValueAtIndex(sources, 0) as TISInputSourceRef) == 0
+            } else {
+                false
+            };
+            CFRelease(sources);
+            selected
+        }
+    }
 
     /// A resolved keyboard layout we can translate keystrokes against.
     /// `uchr` owns the `UCKeyboardLayout` byte buffer (a retained `CFData`), so

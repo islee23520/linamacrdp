@@ -840,6 +840,15 @@ mod macos {
             // symbolic-hotkey logic so the held-modifier check in
             // try_symbolic_hotkey sees the just-pressed modifier.
             if ModifierState::is_modifier_vk(vk) {
+                if vk == VK_CAPS_LOCK && down && crate::keyboard_layout::toggle_korean_english() {
+                    // A remote Caps Lock press switches the actual macOS input
+                    // source instead of uppercasing the following English text.
+                    self.mods.caps_lock = false;
+                    return;
+                }
+                if vk == VK_CAPS_LOCK && !down {
+                    return;
+                }
                 let changed = self.mods.apply(vk, down);
                 tracing::debug!(
                     scancode = format!("0x{scancode:02X}"),
