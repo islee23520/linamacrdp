@@ -1,6 +1,6 @@
 #!/bin/bash
 # Build the macrdp Controller menu-bar app: `swift build` the SwiftPM
-# executable, wrap it in macrdpController.app (LSUIElement, signed), install it.
+# executable, wrap it in LinaMacRDPController.app (LSUIElement, signed), install it.
 #
 # Env overrides:
 #   APP_DIR=/Applications              # install location (default /Applications)
@@ -11,12 +11,12 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 GUI_DIR="$REPO_ROOT/gui"
 APP_DIR="${APP_DIR:-/Applications}"
 IDENTITY="${CODESIGN_IDENTITY:--}"
-APP_NAME="macrdpController.app"
-# MUST match the BUNDLE_PREFIX used by packaging/{make-app,install-launchagent}.sh.
+APP_NAME="LinaMacRDPController.app"
+# MUST match the BUNDLE_ID used by packaging/{make-app,install-launchagent}.sh.
 # The controller derives the server's LaunchAgent label by stripping ".controller"
-# from its own bundle id at runtime, so this prefix decides which agent it drives.
-BUNDLE_PREFIX="${BUNDLE_PREFIX:-com.clintcan}"
-CONTROLLER_ID="$BUNDLE_PREFIX.macrdp.controller"
+# from its own bundle id at runtime, so this id decides which agent it drives.
+BUNDLE_ID="${BUNDLE_ID:-io.linalab.linamacrdp}"
+CONTROLLER_ID="$BUNDLE_ID.controller"
 
 VERSION="$(grep -m1 '^version' "$REPO_ROOT/Cargo.toml" | cut -d'"' -f2)"
 [ -n "$VERSION" ] || { echo "could not read version from Cargo.toml" >&2; exit 1; }
@@ -38,8 +38,8 @@ cat > "$STAGE/Contents/Info.plist" <<PLIST
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key><string>macrdp Controller</string>
-    <key>CFBundleDisplayName</key><string>macrdp Controller</string>
+    <key>CFBundleName</key><string>LinaMacRDP Controller</string>
+    <key>CFBundleDisplayName</key><string>LinaMacRDP Controller</string>
     <key>CFBundleIdentifier</key><string>$CONTROLLER_ID</string>
     <key>CFBundleExecutable</key><string>macrdptray</string>
     <key>CFBundlePackageType</key><string>APPL</string>
@@ -80,14 +80,14 @@ CTRL_ENT_ARG=""
 if [ "${CAMERA_EXTENSION:-0}" = "1" ]; then
     [ "$IDENTITY" != "-" ] || echo "==> WARNING: ad-hoc camera-extension build won't activate (Developer ID + profiles needed)" >&2
     TEAM_ID="${TEAM_ID:-$(printf '%s' "$IDENTITY" | sed -n 's/.*(\([A-Z0-9]\{10\}\)).*/\1/p')}"
-    APP_GROUP="${APP_GROUP:-${TEAM_ID:-TEAMIDXXXX}.$BUNDLE_PREFIX.macrdp}"
+    APP_GROUP="${APP_GROUP:-${TEAM_ID:-TEAMIDXXXX}.$BUNDLE_ID}"
     # Build + sign the extension bundle (its own entitlements/profile).
     OUT_DIR="$REPO_ROOT/target" TEAM_ID="${TEAM_ID:-}" APP_GROUP="$APP_GROUP" \
-        CODESIGN_IDENTITY="$IDENTITY" BUNDLE_PREFIX="$BUNDLE_PREFIX" \
+        CODESIGN_IDENTITY="$IDENTITY" BUNDLE_ID="$BUNDLE_ID" \
         "$REPO_ROOT/packaging/make-camera-extension.sh"
     # The extension bundle is named after its CFBundleIdentifier (required — see
     # make-camera-extension.sh); mirror that here.
-    EXT_SRC="$REPO_ROOT/target/$BUNDLE_PREFIX.macrdp.controller.camera.systemextension"
+    EXT_SRC="$REPO_ROOT/target/$BUNDLE_ID.controller.camera.systemextension"
     [ -d "$EXT_SRC" ] || { echo "extension not built at $EXT_SRC" >&2; exit 1; }
     mkdir -p "$STAGE/Contents/Library/SystemExtensions"
     cp -R "$EXT_SRC" "$STAGE/Contents/Library/SystemExtensions/"

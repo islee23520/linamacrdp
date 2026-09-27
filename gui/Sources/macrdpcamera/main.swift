@@ -40,7 +40,7 @@ private let kHeight: Int32 = 720
 // the extension forwards to the source with NO conversion. CMIO does not transcode,
 // so the advertised stream format MUST equal the format of the buffers sent.
 private let kPixelFormat = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
-private let logger = OSLog(subsystem: "com.clintcan.macrdp.camera", category: "extension")
+private let logger = OSLog(subsystem: "io.linalab.linamacrdp.camera", category: "extension")
 
 
 // MARK: - Provider (one virtual device)
@@ -96,14 +96,14 @@ final class MacrdpCameraDeviceSource: NSObject, CMIOExtensionDeviceSource {
     private var _streamSink: MacrdpCameraStreamSink!
     private var _streamingCounter: UInt32 = 0
     private var _sinkCounter: UInt32 = 0
-    // True once a producer (macrdp.app) is feeding real webcam frames into the
+    // True once a producer (LinaMacRDP.app) is feeding real webcam frames into the
     // sink — the test-pattern timer stands down so the live picture shows through.
     // Read on the timer queue, written on the CMIO client queue; a benign race just
     // costs one extra test frame.
     private var _sinkActive = false
     private var _timer: DispatchSourceTimer?
     private let _timerQueue = DispatchQueue(
-        label: "com.clintcan.macrdp.camera.timer", qos: .userInteractive)
+        label: "io.linalab.linamacrdp.camera.timer", qos: .userInteractive)
     private var _videoDescription: CMFormatDescription!
     private var _bufferPool: CVPixelBufferPool!
     private var _bufferAuxAttributes: NSDictionary!
@@ -206,7 +206,7 @@ final class MacrdpCameraDeviceSource: NSObject, CMIOExtensionDeviceSource {
 
     // MARK: sink (producer → source) — Phase 3b
 
-    // A producer (macrdp.app) started feeding the sink. Ref-count concurrent
+    // A producer (LinaMacRDP.app) started feeding the sink. Ref-count concurrent
     // producers and kick off the consume loop on the first.
     func startStreamingFromSink(_ client: CMIOExtensionClient) {
         _sinkCounter += 1
@@ -422,7 +422,7 @@ final class MacrdpCameraStreamSink: NSObject, CMIOExtensionStreamSource {
     func setStreamProperties(_ streamProperties: CMIOExtensionStreamProperties) throws {}
 
     // The sink is an open injection target — any local process aware of it could push
-    // video into "macrdp Camera". Accept only macrdp.app's producer, and capture it
+    // video into "macrdp Camera". Accept only LinaMacRDP.app's producer, and capture it
     // for the device's consume loop. This is the correct per-stream choke point (vs
     // `connect(to:)`, which is device-wide and would also gate source consumers).
     // Capture the producer client — the device's consume loop pulls from it.

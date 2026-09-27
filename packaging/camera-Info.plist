@@ -9,10 +9,10 @@
   Placeholders (make-camera-extension.sh):
     __VERSION__     macrdp version (Cargo.toml)
     __CAMERA_ID__   extension bundle id — MUST be a child of the container app id
-                    (e.g. com.clintcan.macrdp.controller.camera; macOS enforces the
+                    (e.g. io.linalab.linamacrdp.controller.camera; macOS enforces the
                     prefix for an embedded system extension)
     __MACH_SVC__    CMIOExtensionMachServiceName — set byte-identical to the shared
-                    App Group id (e.g. QGLA89KHM7.com.clintcan.macrdp): that single
+                    App Group id (e.g. QGLA89KHM7.io.linalab.linamacrdp): that single
                     value satisfies BOTH the Team-ID-prefix and app-group-prefix
                     rules CMIO enforces on the service name.
 

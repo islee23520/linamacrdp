@@ -3,7 +3,7 @@ import Security
 import UniformTypeIdentifiers
 
 // macrdp Controller: a menu-bar app that controls the macrdp LaunchAgent
-// (label com.clintcan.macrdp, installed by packaging/install-launchagent.sh)
+// (label io.linalab.linamacrdp, installed by packaging/install-launchagent.sh)
 // and toggles flags in config.env. It is a *controller* — quitting it leaves
 // the server running under launchd. It needs no TCC grants of its own (it only
 // runs `launchctl`, opens URLs, and edits files in the user's own Library);
@@ -15,14 +15,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     lazy var statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
     /// The server's LaunchAgent label, derived from this controller's own bundle
-    /// id by stripping the ".controller" suffix — so whatever BUNDLE_PREFIX the
+    /// id by stripping the ".controller" suffix — so whatever BUNDLE_ID the
     /// app was built with, the controller drives the matching agent. Falls back
     /// to the default prefix for unbundled `swift run` during development.
     let label: String = {
         if let bid = Bundle.main.bundleIdentifier, bid.hasSuffix(".controller") {
             return String(bid.dropLast(".controller".count))
         }
-        return "com.clintcan.macrdp"
+        return "io.linalab.linamacrdp"
     }()
 
     var uid: String { String(getuid()) }
@@ -46,7 +46,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSApp.setActivationPolicy(.accessory) // menu-bar only, no Dock icon
         installMainMenu() // so the Settings window's text fields get edit shortcuts
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "display", accessibilityDescription: "macrdp")
+            button.image = NSImage(systemSymbolName: "display", accessibilityDescription: "LinaMacRDP")
             button.image?.isTemplate = true
         }
         let menu = NSMenu()
@@ -82,8 +82,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // glanceable without opening the menu.
         statusItem.button?.alphaValue = running ? 1.0 : 0.4
         statusItem.button?.toolTip = running
-            ? "macrdp: running (pid \(st.pid!))"
-            : (st.loaded ? "macrdp: stopped" : "macrdp: not installed")
+            ? "LinaMacRDP: running (pid \(st.pid!))"
+            : (st.loaded ? "LinaMacRDP: stopped" : "LinaMacRDP: not installed")
     }
 
     // MARK: - Server status (parsed from the log)
@@ -137,9 +137,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         let st = agentState()
         let header: String
-        if !st.loaded { header = "macrdp — not installed" }
-        else if let pid = st.pid { header = "macrdp — running (pid \(pid))" }
-        else { header = "macrdp — stopped" }
+        if !st.loaded { header = "LinaMacRDP — not installed" }
+        else if let pid = st.pid { header = "LinaMacRDP — running (pid \(pid))" }
+        else { header = "LinaMacRDP — stopped" }
         let h = NSMenuItem(title: header, action: nil, keyEquivalent: "")
         h.isEnabled = false
         menu.addItem(h)
@@ -156,7 +156,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
 
         // Show the tabbed Settings window (where all the config options now live).
-        menu.addItem(item("Show macrdp…", #selector(showSettings)))
+        menu.addItem(item("Show LinaMacRDP…", #selector(showSettings)))
         menu.addItem(.separator())
 
         let running = st.pid != nil
@@ -184,8 +184,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Self-install on first run: locate the server app, onboard the Keychain
         // password, write + register the LaunchAgent — no Terminal step needed.
         guard let serverApp = locateServerApp() else {
-            alert(style: .warning, "Can't find macrdp.app",
-                  "Move both macrdp.app and macrdp Controller into /Applications "
+            alert(style: .warning, "Can't find LinaMacRDP.app",
+                  "Move both LinaMacRDP.app and LinaMacRDP Controller into /Applications "
                   + "(or ~/Applications), then click Start again.")
             return
         }
@@ -241,7 +241,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         guard let serverApp = locateServerApp() else {
             FileHandle.standardError.write(Data(
-                "error: macrdp.app not found next to the controller or in /Applications\n".utf8))
+                "error: LinaMacRDP.app not found next to the controller or in /Applications\n".utf8))
             return 1
         }
         guard hasKeychainPassword() else {
@@ -259,14 +259,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: - Self-install
 
-    /// Locate the server bundle (`macrdp.app`): next to this controller first
+    /// Locate the server bundle (`LinaMacRDP.app`): next to this controller first
     /// (the usual case — both dragged into the same folder), then the standard
     /// install locations.
     func locateServerApp() -> URL? {
         let candidates = [
-            Bundle.main.bundleURL.deletingLastPathComponent().appendingPathComponent("macrdp.app"),
-            URL(fileURLWithPath: "/Applications/macrdp.app"),
-            home.appendingPathComponent("Applications/macrdp.app"),
+            Bundle.main.bundleURL.deletingLastPathComponent().appendingPathComponent("LinaMacRDP.app"),
+            URL(fileURLWithPath: "/Applications/LinaMacRDP.app"),
+            home.appendingPathComponent("Applications/LinaMacRDP.app"),
         ]
         let fm = FileManager.default
         return candidates.first {
@@ -311,7 +311,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func hasKeychainPassword() -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "macrdp",
+            kSecAttrService as String: "LinaMacRDP",
             kSecAttrAccount as String: NSUserName(),
             kSecReturnAttributes as String: true,
         ]
@@ -322,7 +322,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func promptAndStorePassword() -> Bool {
         let a = NSAlert()
         a.messageText = "Enter your macOS account password"
-        a.informativeText = "macrdp authenticates RDP clients against your Mac account and "
+        a.informativeText = "LinaMacRDP authenticates RDP clients against your Mac account and "
             + "starts headless via launchd, so the password is stored in your login Keychain. "
             + "It never leaves this Mac."
         a.addButton(withTitle: "Save")
@@ -335,7 +335,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard a.runModal() == .alertFirstButtonReturn, !field.stringValue.isEmpty else { return false }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "macrdp",
+            kSecAttrService as String: "LinaMacRDP",
             kSecAttrAccount as String: NSUserName(),
         ]
         guard let password = field.stringValue.data(using: .utf8) else { return false }
@@ -381,19 +381,19 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         permissionFlowActive = true
         NSApp.activate(ignoringOtherApps: true)
         let a = NSAlert()
-        a.messageText = "macrdp needs \(first.name) permission"
+        a.messageText = "LinaMacRDP needs \(first.name) permission"
         a.informativeText = (first.name == "Screen Recording"
             ? "Needed to share this Mac's screen with RDP clients."
             : "Needed to forward keyboard and mouse from RDP clients.")
-            + " Turn on macrdp in the list that opens, then come back and click Restart macrdp."
+            + " Turn on LinaMacRDP in the list that opens, then come back and click Restart macrdp."
         a.addButton(withTitle: "Open Settings")
         a.addButton(withTitle: "Later")
         guard a.runModal() == .alertFirstButtonReturn else { permissionFlowActive = false; return }
         first.open()
         let b = NSAlert()
-        b.messageText = "Turned on macrdp for \(first.name)?"
-        b.informativeText = "macrdp restarts so the new permission takes effect."
-        b.addButton(withTitle: "Restart macrdp")
+        b.messageText = "Turned on LinaMacRDP for \(first.name)?"
+        b.informativeText = "LinaMacRDP restarts so the new permission takes effect."
+        b.addButton(withTitle: "Restart LinaMacRDP")
         b.addButton(withTitle: "Later")
         NSApp.activate(ignoringOtherApps: true)
         guard b.runModal() == .alertFirstButtonReturn else { permissionFlowActive = false; return }
@@ -507,13 +507,13 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             _ = a.runModal()
         }
         guard let app = locateServerApp() else {
-            say("macrdp.app not found", "Install macrdp.app first, then run this again.")
+            say("LinaMacRDP.app not found", "Install LinaMacRDP.app first, then run this again.")
             return
         }
         let installer = app.appendingPathComponent("Contents/Resources/install-ifd-handler.sh").path
         guard FileManager.default.fileExists(atPath: installer) else {
             say("Installer not found",
-                "This macrdp.app build doesn't bundle the smart-card handler installer.")
+                "This LinaMacRDP.app build doesn't bundle the smart-card handler installer.")
             return
         }
         var env: [String: String] = [:]

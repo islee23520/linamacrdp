@@ -12,7 +12,7 @@ import os.log
 // (self-serviceable in the Apple Developer portal; written into the controller's
 // provisioning profile). The user approves the install once in System Settings →
 // Privacy & Security ("System software from … was blocked … Allow"). Once active,
-// macrdp.app (the Rust server) feeds the extension's sink stream with the decoded
+// LinaMacRDP.app (the Rust server) feeds the extension's sink stream with the decoded
 // redirected webcam — a separate CMIO client, so it needs neither the extension
 // nor this entitlement. See ~/.claude/plans/camera-redirection-phase3.md.
 //
@@ -20,7 +20,7 @@ import os.log
 // stays installed across server restarts and auto-uninstalls when this controller
 // app is deleted.
 
-private let camLog = OSLog(subsystem: "com.clintcan.macrdp.controller", category: "camera-ext")
+private let camLog = OSLog(subsystem: "io.linalab.linamacrdp.controller", category: "camera-ext")
 
 final class CameraExtensionManager: NSObject, OSSystemExtensionRequestDelegate {
     static let shared = CameraExtensionManager()
@@ -29,12 +29,12 @@ final class CameraExtensionManager: NSObject, OSSystemExtensionRequestDelegate {
     /// (packaging/make-camera-extension.sh + camera-Info.plist). The extension id is
     /// a **child of this controller app's id** — macOS enforces that an embedded
     /// system extension is prefixed by the host app's id — so it's simply
-    /// `<controller-id>.camera`, correct for any BUNDLE_PREFIX.
+    /// `<controller-id>.camera`, correct for any BUNDLE_ID.
     var extensionIdentifier: String {
         if let bid = Bundle.main.bundleIdentifier {
             return bid + ".camera"
         }
-        return "com.clintcan.macrdp.controller.camera"
+        return "io.linalab.linamacrdp.controller.camera"
     }
 
     private var onResult: ((Result<String, Error>) -> Void)?

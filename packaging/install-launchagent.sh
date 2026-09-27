@@ -5,20 +5,20 @@
 # first run, renders the LaunchAgent plist from the template, and bootstraps it.
 #
 # Env overrides:
-#   APP_DIR=/Applications     # where macrdp.app was installed (default /Applications)
+#   APP_DIR=/Applications     # where LinaMacRDP.app was installed (default /Applications)
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PKG_DIR="$REPO_ROOT/packaging"
 APP_DIR="${APP_DIR:-/Applications}"
-# MUST match the BUNDLE_PREFIX used by make-app.sh (and gui/make-tray-app.sh),
+# MUST match the BUNDLE_ID used by make-app.sh (and gui/make-tray-app.sh),
 # or the controller targets a different label than the agent installed here.
-BUNDLE_PREFIX="${BUNDLE_PREFIX:-com.clintcan}"
-LABEL="$BUNDLE_PREFIX.macrdp"
+BUNDLE_ID="${BUNDLE_ID:-io.linalab.linamacrdp}"
+LABEL="$BUNDLE_ID"
 UID_NUM="$(id -u)"
 
-APP="$APP_DIR/macrdp.app"
-[ -d "$APP" ] || { echo "macrdp.app not found at $APP — run packaging/make-app.sh first" >&2; exit 1; }
+APP="$APP_DIR/LinaMacRDP.app"
+[ -d "$APP" ] || { echo "LinaMacRDP.app not found at $APP — run packaging/make-app.sh first" >&2; exit 1; }
 
 # 1. Seed config.env if absent.
 SUPPORT="$HOME/Library/Application Support/macrdp"

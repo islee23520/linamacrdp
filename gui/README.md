@@ -21,19 +21,19 @@ need to run `install-launchagent.sh` — the controller **self-installs** the
 LaunchAgent and onboards the Keychain password on first **Start** (see below).
 
 ```bash
-./make-tray-app.sh                                  # -> /Applications/macrdpController.app
+./make-tray-app.sh                                  # -> /Applications/LinaMacRDPController.app
 APP_DIR="$HOME/Applications" ./make-tray-app.sh     # or install without sudo
-open "/Applications/macrdpController.app"            # display icon appears in the menu bar
+open "/Applications/LinaMacRDPController.app"            # display icon appears in the menu bar
 ```
 
 Built with plain SwiftPM (no `.xcodeproj`): `swift build -c release` produces
 the executable, `make-tray-app.sh` wraps it into a signed `LSUIElement` bundle
 in `target/` and installs it.
 
-The bundle-ID prefix is configurable with `BUNDLE_PREFIX` (default `com.clintcan`)
-— the controller becomes `$BUNDLE_PREFIX.macrdp.controller` and derives the
+The server bundle id is configurable with `BUNDLE_ID` (default `io.linalab.linamacrdp`)
+— the controller becomes `$BUNDLE_ID.controller` and derives the
 server's LaunchAgent label by stripping `.controller` at runtime. **Use the same
-`BUNDLE_PREFIX` here as in `../packaging/`**, or the controller drives the wrong
+`BUNDLE_ID` here as in `../packaging/`**, or the controller drives the wrong
 agent.
 
 ## First-run self-install
@@ -42,7 +42,7 @@ The intended end-user flow is just: drag both apps from the DMG into
 `/Applications`, open the controller, click **Start**. On first Start the
 controller:
 
-1. **Locates `macrdp.app`** (sibling in the same folder, else `/Applications`,
+1. **Locates `LinaMacRDP.app`** (sibling in the same folder, else `/Applications`,
    else `~/Applications`).
 2. **Prompts for your macOS account password** and stores it in the Keychain
    (the headless server reads it from there; written via `security` so there's
@@ -55,8 +55,8 @@ No Terminal, no `install-launchagent.sh`. For unattended/MDM deploys there's a
 headless equivalent:
 
 ```bash
-macrdpController.app/Contents/MacOS/macrdptray --install-agent   # locate + write + load agent
-macrdpController.app/Contents/MacOS/macrdptray --print-paths      # diagnose resolved paths (no side effects)
+LinaMacRDPController.app/Contents/MacOS/macrdptray --install-agent   # locate + write + load agent
+LinaMacRDPController.app/Contents/MacOS/macrdptray --print-paths      # diagnose resolved paths (no side effects)
 ```
 (`--install-agent` assumes the Keychain password is set separately.)
 
@@ -121,5 +121,5 @@ The Mac App Store is not viable for the server it controls (private
 
 ## Notes
 - To auto-launch the controller at login: System Settings → General →
-  Login Items → add `macrdpController.app` (the server itself already
+  Login Items → add `LinaMacRDPController.app` (the server itself already
   autostarts via its own LaunchAgent).

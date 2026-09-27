@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  macrdp.app Info.plist (template).
+  LinaMacRDP.app Info.plist (template).
 
   __VERSION__ is substituted by make-app.sh from Cargo.toml.
 
@@ -15,15 +15,15 @@
 
   LSUIElement=true makes this a background agent: no Dock icon, no menu bar.
   The LaunchAgent (see launchagent.plist.template) is what actually runs it.
-  CFBundleIdentifier (__BUNDLE_ID__ = $BUNDLE_PREFIX.macrdp) is substituted by
+  CFBundleIdentifier (__BUNDLE_ID__ = $BUNDLE_ID, default io.linalab.linamacrdp) is substituted by
   make-app.sh.
 -->
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>macrdp</string>
+    <string>LinaMacRDP</string>
     <key>CFBundleDisplayName</key>
-    <string>macrdp</string>
+    <string>LinaMacRDP</string>
     <key>CFBundleIdentifier</key>
     <string>__BUNDLE_ID__</string>
     <key>CFBundleExecutable</key>
