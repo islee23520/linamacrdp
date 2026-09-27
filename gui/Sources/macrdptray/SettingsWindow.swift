@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 // The tabbed Settings window opened by "Show macrdp…". A SwiftUI TabView hosted
