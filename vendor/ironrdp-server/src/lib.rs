@@ -6,6 +6,7 @@ pub use {tokio, tokio_rustls};
 
 mod macros;
 
+mod audin;
 pub mod autodetect;
 mod builder;
 mod capabilities;
@@ -26,6 +27,7 @@ mod rdpeusb;
 mod server;
 mod sound;
 
+pub use audin::{AUDIO_INPUT_CHANNEL_NAME, AudinSampleSink, AudinServer, AudinServerFactory};
 pub use clipboard::CliprdrServerFactory;
 pub use display::{
     BitmapUpdate, ColorPointer, DesktopSize, DisplayUpdate, Framebuffer, PixelFormat, RGBAPointer, RdpServerDisplay,

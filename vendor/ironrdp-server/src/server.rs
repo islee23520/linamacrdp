@@ -479,6 +479,7 @@ pub struct RdpServer {
     // protocol gate. The `RDCamera_Device_Enumerator` DVC is advertised only when
     // this is `Some`; byte-identical when None.
     camera_factory: Option<Rc<dyn crate::RdCameraServerFactory>>,
+    audin_factory: Option<Rc<dyn crate::AudinServerFactory>>,
     echo_handle: EchoServerHandle,
     #[cfg(feature = "egfx")]
     gfx_factory: Option<Rc<dyn GfxServerFactory>>,
@@ -787,6 +788,7 @@ fn attach_channels_impl(
     rdpdr_factory: Option<&dyn crate::RdpdrServerFactory>,
     usb_factory: Option<&dyn crate::UrbdrcServerFactory>,
     camera_factory: Option<&dyn crate::RdCameraServerFactory>,
+    audin_factory: Option<&dyn crate::AudinServerFactory>,
     #[cfg(feature = "egfx")] gfx_factory: Option<&dyn GfxServerFactory>,
     #[cfg(feature = "multitransport")] multitransport_lossy_audio_formats: Option<
         Vec<ironrdp_rdpsnd::pdu::AudioFormat>,
@@ -892,6 +894,14 @@ fn attach_channels_impl(
         dvc
     };
 
+    let dvc = {
+        let mut dvc = dvc;
+        if let Some(factory) = audin_factory {
+            dvc = dvc.with_dynamic_channel(crate::AudinServer::new(factory.build_sample_sink()));
+        }
+        dvc
+    };
+
     acceptor.attach_static_channel(dvc);
 
     gfx_handle
@@ -924,6 +934,7 @@ struct NegotiationContext {
     rdpdr_factory: Option<Rc<dyn crate::RdpdrServerFactory>>,
     usb_factory: Option<Rc<dyn crate::UrbdrcServerFactory>>,
     camera_factory: Option<Rc<dyn crate::RdCameraServerFactory>>,
+    audin_factory: Option<Rc<dyn crate::AudinServerFactory>>,
     #[cfg(feature = "egfx")]
     gfx_factory: Option<Rc<dyn GfxServerFactory>>,
     connection_handler: Option<Rc<RefCell<Box<dyn ConnectionHandler>>>>,
@@ -1028,6 +1039,7 @@ async fn negotiate_candidate(
         ctx.rdpdr_factory.as_deref(),
         ctx.usb_factory.as_deref(),
         ctx.camera_factory.as_deref(),
+        ctx.audin_factory.as_deref(),
         #[cfg(feature = "egfx")]
         ctx.gfx_factory.as_deref(),
         // No multitransport offer for a candidate (see the struct doc on
@@ -1144,6 +1156,7 @@ impl RdpServer {
         mut rdpdr_factory: Option<Box<dyn crate::RdpdrServerFactory>>,
         mut usb_factory: Option<Box<dyn crate::UrbdrcServerFactory>>,
         mut camera_factory: Option<Box<dyn crate::RdCameraServerFactory>>,
+        audin_factory: Option<Box<dyn crate::AudinServerFactory>>,
         connection_handler: Option<Box<dyn ConnectionHandler>>,
         #[cfg(feature = "egfx")] mut gfx_factory: Option<Box<dyn GfxServerFactory>>,
     ) -> Self {
@@ -1188,6 +1201,7 @@ impl RdpServer {
             rdpdr_factory: rdpdr_factory.map(Rc::from),
             usb_factory: usb_factory.map(Rc::from),
             camera_factory: camera_factory.map(Rc::from),
+            audin_factory: audin_factory.map(Rc::from),
             echo_handle: EchoServerHandle::new(ev_sender.clone()),
             #[cfg(feature = "egfx")]
             gfx_factory: gfx_factory.map(Rc::from),
@@ -1454,6 +1468,7 @@ impl RdpServer {
             self.rdpdr_factory.as_deref(),
             self.usb_factory.as_deref(),
             self.camera_factory.as_deref(),
+            self.audin_factory.as_deref(),
             #[cfg(feature = "egfx")]
             self.gfx_factory.as_deref(),
             #[cfg(feature = "multitransport")]
@@ -1530,6 +1545,7 @@ impl RdpServer {
             rdpdr_factory: self.rdpdr_factory.clone(),
             usb_factory: self.usb_factory.clone(),
             camera_factory: self.camera_factory.clone(),
+            audin_factory: self.audin_factory.clone(),
             #[cfg(feature = "egfx")]
             gfx_factory: self.gfx_factory.clone(),
             connection_handler: self.connection_handler.clone(),
