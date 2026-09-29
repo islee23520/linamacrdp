@@ -3,7 +3,7 @@
 <!--
   LaunchAgent template. __LABEL__, __APP_DIR__ and __HOME__ are substituted by
   install-launchagent.sh and the result is written to
-  ~/Library/LaunchAgents/<label>.plist (label = $BUNDLE_PREFIX.macrdp).
+  ~/Library/LaunchAgents/<label>.plist (label = $BUNDLE_ID).
 
   This launches the SIGNED macrdp binary directly with `--config`, so macOS
   Background Task Management identifies the agent by its stable Developer-ID
@@ -22,7 +22,7 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>__APP_DIR__/macrdp.app/Contents/MacOS/macrdp</string>
+        <string>__APP_DIR__/LinaMacRDP.app/Contents/MacOS/macrdp</string>
         <string>--config</string>
         <string>__HOME__/Library/Application Support/macrdp/config.env</string>
     </array>

@@ -2,7 +2,7 @@
 <!--
   Info.plist for ifd-macrdp.bundle — macrdp's PC/SC IFD handler, loaded by macOS
   SmartCardServices (com.apple.ifdreader.slotd). make-app.sh fills __BUNDLE_ID__
-  and embeds the signed bundle in macrdp.app/Contents/Resources; install-ifd-handler.sh
+  and embeds the signed bundle in LinaMacRDP.app/Contents/Resources; install-ifd-handler.sh
   copies it to /usr/local/libexec/SmartCardServices/drivers and can rewrite the
   ifdVendorID/ifdProductID to match the USB device that triggers its load.
 

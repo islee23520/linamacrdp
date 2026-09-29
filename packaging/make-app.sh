@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build macrdp.app — a stably-signed bundle with the binary as a co-signed
+# Build LinaMacRDP.app — a stably-signed bundle with the binary as a co-signed
 # helper at a fixed path, so the Screen Recording / Accessibility TCC grants
 # survive rebuilds. Designed for personal use, but the bundle layout is also
 # the foundation a future menu-bar GUI controller would spawn.
@@ -30,16 +30,15 @@ elif security find-identity -v -p codesigning 2>/dev/null | grep -q '"macrdp-dev
 else
     IDENTITY="-"
 fi
-# Bundle-ID prefix (reverse-DNS of the publishing entity). MUST match what
+# Server bundle id (reverse-DNS of the publishing entity). MUST match what
 # install-launchagent.sh and gui/make-tray-app.sh use, or the controller will
 # target the wrong LaunchAgent label.
-BUNDLE_PREFIX="${BUNDLE_PREFIX:-com.clintcan}"
-BUNDLE_ID="$BUNDLE_PREFIX.macrdp"
+BUNDLE_ID="${BUNDLE_ID:-io.linalab.linamacrdp}"
 
 VERSION="$(grep -m1 '^version' "$REPO_ROOT/Cargo.toml" | cut -d'"' -f2)"
 [ -n "$VERSION" ] || { echo "could not read version from Cargo.toml" >&2; exit 1; }
 
-echo "==> macrdp.app v$VERSION  (id: $BUNDLE_ID, identity: $IDENTITY, install: $APP_DIR)"
+echo "==> LinaMacRDP.app v$VERSION  (id: $BUNDLE_ID, identity: $IDENTITY, install: $APP_DIR)"
 
 # 1. Build the release binary (native target).
 if [ "${SKIP_BUILD:-0}" != "1" ]; then
@@ -51,7 +50,7 @@ BIN="$REPO_ROOT/target/release/macrdp"
 
 # 2. Assemble the bundle in a staging dir under target/ (already gitignored;
 #    dist/ holds the tracked install scripts, not build output).
-STAGE="$REPO_ROOT/target/macrdp.app"
+STAGE="$REPO_ROOT/target/LinaMacRDP.app"
 echo "==> staging bundle at $STAGE"
 rm -rf "$STAGE"
 mkdir -p "$STAGE/Contents/MacOS" "$STAGE/Contents/Resources"
@@ -124,7 +123,7 @@ if [ -f "$IFD_DYLIB" ]; then
     codesign --force --options runtime $TS -s "$IDENTITY" "$IFD_BUNDLE/Contents/MacOS/libifd_macrdp.dylib"
     codesign --force --options runtime $TS -s "$IDENTITY" "$IFD_BUNDLE"
     # Ship the privileged installer alongside it so DMG users can run
-    #   /Applications/macrdp.app/Contents/Resources/install-ifd-handler.sh
+    #   /Applications/LinaMacRDP.app/Contents/Resources/install-ifd-handler.sh
     # plus the USB-trigger picker the installer invokes (must sit next to it).
     cp "$PKG_DIR/install-ifd-handler.sh" "$STAGE/Contents/Resources/install-ifd-handler.sh"
     cp "$PKG_DIR/select-usb-trigger.sh" "$STAGE/Contents/Resources/select-usb-trigger.sh"
@@ -194,23 +193,23 @@ if [ "${NOTARIZE:-0}" = "1" ]; then
 fi
 
 # 4. Install to the stable path. cp -R preserves the signature.
-echo "==> installing to $APP_DIR/macrdp.app"
+echo "==> installing to $APP_DIR/LinaMacRDP.app"
 if ! mkdir -p "$APP_DIR" 2>/dev/null || [ ! -w "$APP_DIR" ]; then
     echo "    $APP_DIR is not writable — re-run with sudo, or set APP_DIR=\$HOME/Applications" >&2
     exit 1
 fi
-rm -rf "$APP_DIR/macrdp.app"
-cp -R "$STAGE" "$APP_DIR/macrdp.app"
-codesign --verify --strict "$APP_DIR/macrdp.app"
+rm -rf "$APP_DIR/LinaMacRDP.app"
+cp -R "$STAGE" "$APP_DIR/LinaMacRDP.app"
+codesign --verify --strict "$APP_DIR/LinaMacRDP.app"
 
 echo
-echo "Done. Installed: $APP_DIR/macrdp.app"
-codesign -dv "$APP_DIR/macrdp.app" 2>&1 | sed 's/^/    /'
+echo "Done. Installed: $APP_DIR/LinaMacRDP.app"
+codesign -dv "$APP_DIR/LinaMacRDP.app" 2>&1 | sed 's/^/    /'
 echo
 echo "Next:"
 echo "  1. Store the password once:"
 echo "       security add-generic-password -s macrdp -a \"\$(id -un)\" -w 'YOUR_PASSWORD'"
 echo "  2. Install + load the LaunchAgent:"
 echo "       APP_DIR=\"$APP_DIR\" packaging/install-launchagent.sh"
-echo "  3. Grant Screen Recording + Accessibility to macrdp.app when prompted"
+echo "  3. Grant Screen Recording + Accessibility to LinaMacRDP.app when prompted"
 echo "     (System Settings -> Privacy & Security)."

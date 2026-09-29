@@ -6,8 +6,8 @@
 # entitlements + provisioning profile.
 #
 # This is the no-Xcode analogue of Xcode's "System Extension" product type — the
-# same hand-assembly approach make-app.sh uses for macrdp.app. The resulting
-# `.systemextension` is embedded into macrdpController.app/Contents/Library/
+# same hand-assembly approach make-app.sh uses for LinaMacRDP.app. The resulting
+# `.systemextension` is embedded into LinaMacRDPController.app/Contents/Library/
 # SystemExtensions/ by gui/make-tray-app.sh (CAMERA_EXTENSION=1), which then
 # activates it via OSSystemExtensionRequest.
 #
@@ -17,22 +17,22 @@
 #                       inspection — it will NOT activate).
 #   TEAM_ID             Apple Team ID (e.g. QGLA89KHM7). Required for the App Group
 #                       / MachServiceName unless derivable from the identity.
-#   APP_GROUP           App Group id (default: <TEAM_ID>.<BUNDLE_PREFIX>.macrdp).
+#   APP_GROUP           App Group id (default: <TEAM_ID>.<BUNDLE_ID>).
 #   CAMERA_PROVISION_PROFILE   .provisionprofile for the extension App ID
-#                       (com.clintcan.macrdp.camera) with the App Group. Embedded
+#                       (io.linalab.linamacrdp.controller.camera) with the App Group. Embedded
 #                       into the bundle. Required for a Developer-ID activatable build.
-#   BUNDLE_PREFIX       reverse-DNS prefix (default com.clintcan).
+#   BUNDLE_ID           server bundle id (default io.linalab.linamacrdp).
 #   OUT_DIR             where to stage the bundle (default target/).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PKG_DIR="$REPO_ROOT/packaging"
 GUI_DIR="$REPO_ROOT/gui"
-BUNDLE_PREFIX="${BUNDLE_PREFIX:-com.clintcan}"
+BUNDLE_ID="${BUNDLE_ID:-io.linalab.linamacrdp}"
 # The extension bundle id MUST be a child of the container (controller) app id —
 # macOS enforces that an embedded system extension's id is prefixed by the host
 # app's id, or activation fails validation.
-CONTROLLER_ID="$BUNDLE_PREFIX.macrdp.controller"
+CONTROLLER_ID="$BUNDLE_ID.controller"
 CAMERA_ID="$CONTROLLER_ID.camera"
 IDENTITY="${CODESIGN_IDENTITY:--}"
 OUT_DIR="${OUT_DIR:-$REPO_ROOT/target}"
@@ -52,7 +52,7 @@ if [ -z "${TEAM_ID:-}" ]; then
         echo "TEAM_ID not set and not parseable from identity '$IDENTITY'" >&2; exit 1
     fi
 fi
-APP_GROUP="${APP_GROUP:-$TEAM_ID.$BUNDLE_PREFIX.macrdp}"
+APP_GROUP="${APP_GROUP:-$TEAM_ID.$BUNDLE_ID}"
 # The CMIO Mach service name is set byte-identical to the App Group id — that
 # single value satisfies both the Team-ID-prefix and app-group-prefix rules CMIO
 # enforces (the proven-safe form from Apple's sample).

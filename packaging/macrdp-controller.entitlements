@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  Entitlements for macrdpController.app when it embeds + activates the macrdp
+  Entitlements for LinaMacRDPController.app when it embeds + activates the macrdp
   Camera system extension (camera redirection Phase 3).
 
   Only used when gui/make-tray-app.sh is run with CAMERA_EXTENSION=1 (the
@@ -20,7 +20,7 @@
       system-extension.install and activate a CMIO extension (OBS does exactly this).
     - The App Group belongs only on the EXTENSION (it names the extension's CMIO
       Mach service). The controller merely activates; the decoded-frame feed to the
-      extension comes from macrdp.app via the CoreMediaIO client API, not the group.
+      extension comes from LinaMacRDP.app via the CoreMediaIO client API, not the group.
 
   This set MUST be a subset of the controller's provisioning profile's entitlements
   or codesign fails. Because system-extension.install is a restricted entitlement,

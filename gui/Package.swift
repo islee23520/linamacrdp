@@ -25,7 +25,10 @@ let package = Package(
         .executableTarget(
             name: "macrdptray",
             path: "Sources/macrdptray",
-            linkerSettings: [.linkedFramework("SystemExtensions")]
+            linkerSettings: [
+                .linkedFramework("SystemExtensions"),
+                .linkedFramework("Security"),
+            ]
         ),
         .executableTarget(name: "macrdphud", path: "Sources/macrdphud"),
         .executableTarget(name: "macrdpshield", path: "Sources/macrdpshield"),

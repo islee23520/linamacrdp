@@ -141,7 +141,9 @@ ironrdp-core             = { git = "https://github.com/Devolutions/IronRDP.git",
 ironrdp-displaycontrol   = { git = "https://github.com/Devolutions/IronRDP.git", rev = "a5d1c682fd1f65287f6f5727bdead2aef7a2bea7" }
 ironrdp-egfx             = { git = "https://github.com/Devolutions/IronRDP.git", rev = "a5d1c682fd1f65287f6f5727bdead2aef7a2bea7" }
 ironrdp-graphics         = { git = "https://github.com/Devolutions/IronRDP.git", rev = "a5d1c682fd1f65287f6f5727bdead2aef7a2bea7" }
-ironrdp-pdu              = { git = "https://github.com/Devolutions/IronRDP.git", rev = "a5d1c682fd1f65287f6f5727bdead2aef7a2bea7" }
+# ironrdp-pdu is vendored (same upstream rev) to accept keyboardType 8 (Korean
+# mstsc). See vendor/ironrdp-pdu/CLAUDE.md.
+ironrdp-pdu              = { path = "vendor/ironrdp-pdu" }
 ironrdp-rdpsnd           = { git = "https://github.com/Devolutions/IronRDP.git", rev = "a5d1c682fd1f65287f6f5727bdead2aef7a2bea7" }
 ironrdp-svc              = { git = "https://github.com/Devolutions/IronRDP.git", rev = "a5d1c682fd1f65287f6f5727bdead2aef7a2bea7" }
 ironrdp-tokio            = { git = "https://github.com/Devolutions/IronRDP.git", rev = "a5d1c682fd1f65287f6f5727bdead2aef7a2bea7" }
@@ -154,6 +156,7 @@ ironrdp-tokio            = { git = "https://github.com/Devolutions/IronRDP.git",
 # consumer resolves to the single vendored copy.
 [patch."https://github.com/Devolutions/IronRDP.git"]
 ironrdp-dvc = { path = "vendor/ironrdp-dvc" }
+ironrdp-pdu = { path = "vendor/ironrdp-pdu" }
 
 [profile.release]
 lto = "thin"

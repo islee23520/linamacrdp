@@ -1,4 +1,4 @@
-# Packaging — `macrdp.app` (personal use)
+# Packaging — `LinaMacRDP.app` (personal use)
 
 Wraps the `macrdp` binary in a stably-signed `.app` bundle and runs it as a
 per-user **LaunchAgent**. The point is not double-click UX (macrdp is a
@@ -19,11 +19,11 @@ LaunchAgent and edits the same `config.env` — no re-permissioning.
 > **vs. `dist/install.sh`:** the repo's other auto-start path installs a *bare
 > binary* to `~/.local/bin/macrdp` under the launchd label `com.user.macrdp`.
 > This `packaging/` path instead produces a real `.app` bundle under the label
-> `com.clintcan.macrdp`. They share the `macrdp` Keychain entry and both bind
+> `io.linalab.linamacrdp`. They share the `macrdp` Keychain entry and both bind
 > `:3390`, so they're **mutually exclusive** — pick one. Use `dist/install.sh`
 > for the lightweight binary; use `packaging/` when you want a stable bundle
 > identity and a path a future GUI can build on. The build is staged in
-> `target/macrdp.app` (gitignored) before install.
+> `target/LinaMacRDP.app` (gitignored) before install.
 
 ## Files
 
@@ -66,19 +66,19 @@ security add-generic-password -s macrdp -a "$(id -un)" -w 'YOUR_PASSWORD'
 # 3. Install + load the LaunchAgent.
 packaging/install-launchagent.sh
 
-# 4. First launch will need TCC grants. Grant macrdp.app under
+# 4. First launch will need TCC grants. Grant LinaMacRDP.app under
 #    System Settings -> Privacy & Security -> Screen Recording AND Accessibility,
-#    then: launchctl kickstart -k gui/$(id -u)/com.clintcan.macrdp
+#    then: launchctl kickstart -k gui/$(id -u)/io.linalab.linamacrdp
 ```
 
 ## Day to day
 
 ```bash
 tail -f ~/Library/Logs/macrdp.log                       # logs
-launchctl print gui/$(id -u)/com.clintcan.macrdp        # status (state/pid)
+launchctl print gui/$(id -u)/io.linalab.linamacrdp        # status (state/pid)
 $EDITOR "$HOME/Library/Application Support/macrdp/config.env"
-launchctl kickstart -k gui/$(id -u)/com.clintcan.macrdp # apply config change
-launchctl bootout    gui/$(id -u)/com.clintcan.macrdp   # stop entirely
+launchctl kickstart -k gui/$(id -u)/io.linalab.linamacrdp # apply config change
+launchctl bootout    gui/$(id -u)/io.linalab.linamacrdp   # stop entirely
 ```
 
 Edit feature toggles (H.264, AAC, HiDPI, un-minimize-on-Cmd+Tab), the headless virtual display
@@ -98,7 +98,7 @@ it needs a one-time admin prompt and **isn't** done by drag-to-Applications:
 # Install the IFD handler (GUI admin prompt; no manual sudo). From a checkout:
 packaging/install-ifd-handler.sh
 # …or from an installed app (e.g. a DMG install):
-/Applications/macrdp.app/Contents/Resources/install-ifd-handler.sh
+/Applications/LinaMacRDP.app/Contents/Resources/install-ifd-handler.sh
 
 # Bind the USB device that triggers the driver load (macOS loads IFD drivers
 # only on a matching USB hotplug — a headless server needs a permanent dongle):
@@ -114,19 +114,19 @@ reader registered with `system_profiler SPSmartCardsDataType`.
 
 ## Notes & limits
 
-- **Bundle-ID prefix is configurable** via `BUNDLE_PREFIX` (default `com.clintcan`):
-  the app becomes `$BUNDLE_PREFIX.macrdp`, the LaunchAgent label the same, and the
-  controller `$BUNDLE_PREFIX.macrdp.controller`. **Set the *same* `BUNDLE_PREFIX`
+- **Bundle id is configurable** via `BUNDLE_ID` (default `io.linalab.linamacrdp`):
+  the app becomes `$BUNDLE_ID`, the LaunchAgent label the same, and the
+  controller `$BUNDLE_ID.controller`. **Set the *same* `BUNDLE_ID`
   for `make-app.sh`, `install-launchagent.sh`, and `gui/make-tray-app.sh`** — the
   controller derives the agent label from its own bundle id, so a mismatch makes
   it drive the wrong (or no) agent. Pick this before your first public build (it's
   what publishes under your company's reverse-DNS). The launchctl examples below
-  use the default label; substitute yours if you changed the prefix.
+  use the default label; substitute yours if you changed the id.
 
   ```bash
-  BUNDLE_PREFIX="com.acme" packaging/make-app.sh
-  BUNDLE_PREFIX="com.acme" packaging/install-launchagent.sh
-  BUNDLE_PREFIX="com.acme" gui/make-tray-app.sh
+  BUNDLE_ID="com.acme.rdp" packaging/make-app.sh
+  BUNDLE_ID="com.acme.rdp" packaging/install-launchagent.sh
+  BUNDLE_ID="com.acme.rdp" gui/make-tray-app.sh
   ```
 - **Ad-hoc signing is local-only.** `make-app.sh` ad-hoc signs by default
   (`CODESIGN_IDENTITY=-`), which is fine for your own machine but Gatekeeper
@@ -172,13 +172,13 @@ reader registered with `system_profiler SPSmartCardsDataType`.
   only true with a real certificate identity — ad-hoc signing (`-`) can NOT
   keep TCC grants across rebuilds.** An ad-hoc signature has no certificate,
   so its designated requirement degrades to `cdhash H"<hash of the binary>"`
-  (verify with `codesign -d -r- macrdp.app`) — TCC keys the grant to that
+  (verify with `codesign -d -r- LinaMacRDP.app`) — TCC keys the grant to that
   exact binary hash, and every rebuild changes it, invalidating the grant
   (confirmed live 2026-07-05: three consecutive ad-hoc rebuilds each required
   re-granting Screen Recording + Accessibility). The zero-cost fix is a
   **self-signed code-signing certificate named `macrdp-dev`** in the login
   keychain — `make-app.sh` auto-prefers it when `CODESIGN_IDENTITY` is unset —
-  which makes the requirement `identifier "com.clintcan.macrdp" and
+  which makes the requirement `identifier "io.linalab.linamacrdp" and
   certificate leaf = H"<cert hash>"`, stable across rebuilds. Create it once
   via Keychain Access → Certificate Assistant → Create a Certificate →
   type "Code Signing", or scripted:

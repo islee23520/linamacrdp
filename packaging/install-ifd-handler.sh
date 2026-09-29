@@ -6,7 +6,7 @@
 #
 # The driver dir is root-owned, so this needs admin rights — you'll get a single
 # GUI password prompt (no manual sudo). The handler bundle ships embedded in
-# macrdp.app (Contents/Resources/ifd-macrdp.bundle); this finds it there, or
+# LinaMacRDP.app (Contents/Resources/ifd-macrdp.bundle); this finds it there, or
 # builds one from the repo if run from a checkout.
 #
 # Usage:
@@ -15,7 +15,7 @@
 #   IFD_VID=0x2174 IFD_PID=0x2100 packaging/install-ifd-handler.sh   # set USB trigger
 #
 # Env:
-#   APP_DIR=/Applications   where macrdp.app is installed (to find the bundle)
+#   APP_DIR=/Applications   where LinaMacRDP.app is installed (to find the bundle)
 #   IFD_VID / IFD_PID       VID/PID of the USB device that triggers the driver
 #                           load (macOS loads IFD drivers only on a matching USB
 #                           hotplug). Defaults to the bundle's baked-in values.
@@ -66,14 +66,14 @@ fi
 #    then the installed app, then a staged build, else build one from the repo.
 SRC=""
 for c in "$SELF_DIR/ifd-macrdp.bundle" \
-         "$APP_DIR/macrdp.app/Contents/Resources/ifd-macrdp.bundle" \
-         "$REPO_ROOT/target/macrdp.app/Contents/Resources/ifd-macrdp.bundle"; do
+         "$APP_DIR/LinaMacRDP.app/Contents/Resources/ifd-macrdp.bundle" \
+         "$REPO_ROOT/target/LinaMacRDP.app/Contents/Resources/ifd-macrdp.bundle"; do
     [ -d "$c" ] && { SRC="$c"; break; }
 done
 if [ -z "$SRC" ]; then
     [ -f "$REPO_ROOT/ifd-handler/Cargo.toml" ] || {
         echo "No embedded ifd-macrdp.bundle found and no repo to build from." >&2
-        echo "Install macrdp.app first (it embeds the bundle), or run from a checkout." >&2
+        echo "Install LinaMacRDP.app first (it embeds the bundle), or run from a checkout." >&2
         exit 1
     }
     echo "==> No embedded bundle found; building from ifd-handler/"
@@ -83,7 +83,7 @@ if [ -z "$SRC" ]; then
     VERSION="$(grep -m1 '^version' "$REPO_ROOT/Cargo.toml" | cut -d'"' -f2)"
     SRC="$REPO_ROOT/target/ifd-macrdp.bundle"
     rm -rf "$SRC"; mkdir -p "$SRC/Contents/MacOS"
-    sed -e "s/__VERSION__/$VERSION/g" -e "s#__BUNDLE_ID__#com.clintcan.macrdp.ifd#g" \
+    sed -e "s/__VERSION__/$VERSION/g" -e "s#__BUNDLE_ID__#io.linalab.linamacrdp.ifd#g" \
         "$REPO_ROOT/packaging/ifd-Info.plist" > "$SRC/Contents/Info.plist"
     cp "$DY" "$SRC/Contents/MacOS/libifd_macrdp.dylib"
     codesign -s - --force "$SRC/Contents/MacOS/libifd_macrdp.dylib" "$SRC"

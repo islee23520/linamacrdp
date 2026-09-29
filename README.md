@@ -1,8 +1,9 @@
-# macrdp
+# LinaMacRDP
 
-[![Latest release](https://img.shields.io/github/v/release/clintcan/macrdp?sort=semver&label=release)](https://github.com/clintcan/macrdp/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/islee23520/linamacrdp?sort=semver&label=release)](https://github.com/islee23520/linamacrdp/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](#license)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-buy%20me%20a%20coffee-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/clintcan)
+
+Linalab's Mac RDP server, a fork of [clintcan/macrdp](https://github.com/clintcan/macrdp) that adds Korean input (Caps Lock 한/영 toggle, Korean-layout Windows clients), a Linux VAAPI-decodable H.264 stream, and permission prompts in the menu-bar controller. Distributed free as a signed and notarized Developer ID app (`LinaMacRDP.app` + `LinaMacRDPController.app`, bundle id `io.linalab.linamacrdp`). The command-line binary, Keychain entry and config folder keep the upstream `macrdp` name.
 
 A native RDP server for macOS, written in Rust on top of [IronRDP]. Connect from `mstsc`, Microsoft Remote Desktop, or FreeRDP to drive your Mac desktop with keyboard, mouse, real-cursor-shape forwarding, text + image clipboard sync, Mac↔Windows file copy, **read-write drive redirection** (mount the client's drives in Finder), **smart-card redirection** (use the client's smart card from macOS apps), system audio forwarding, and optional H.264 video (EGFX/AVC420, hardware-encoded). NLA/CredSSP is supported. Authenticates against your local Mac account via PAM.
 
@@ -82,12 +83,12 @@ launchctl bootout gui/$UID/com.user.macrdp         # stop / uninstall
 
 ## Building the full app
 
-`dist/install.sh` installs a bare binary. For a proper **signed `macrdp.app`** — stable bundle identity (TCC grants survive rebuilds), background-agent behavior, the embedded smart-card IFD handler, optional notarization, the menu-bar controller app, and a distributable DMG:
+`dist/install.sh` installs a bare binary. For a proper **signed `LinaMacRDP.app`** — stable bundle identity (TCC grants survive rebuilds), background-agent behavior, the embedded smart-card IFD handler, optional notarization, the menu-bar controller app, and a distributable DMG:
 
 ```bash
 packaging/make-app.sh                                 # build + sign + install to /Applications
 security add-generic-password -s macrdp -a "$(id -un)" -w 'YOUR_PASSWORD'
-packaging/install-launchagent.sh                      # load LaunchAgent (label com.clintcan.macrdp)
+packaging/install-launchagent.sh                      # load LaunchAgent (label io.linalab.linamacrdp)
 ```
 
 Feature toggles, bind address, and extra flags live in `~/Library/Application Support/macrdp/config.env` — outside the bundle, so edits never disturb the signature or TCC grants. The full packaging guide (Developer-ID signing, notarization, the DMG, the controller app, icons, TCC notes): **[packaging/README.md](packaging/README.md)**.
@@ -99,10 +100,10 @@ Pushing a `v*` tag runs the [release workflow](.github/workflows/release.yml), w
 | File | What it is |
 |------|------------|
 | `macrdp-<ver>-aarch64-apple-darwin.tar.gz` | the **bare CLI binary** + `LICENSE`/`README` |
-| `macrdp-<ver>-aarch64-apple-darwin-app.zip` | the full **`macrdp.app`**, with the embedded smart-card IFD handler + installer — the only artifact that carries everything `--enable-smartcard-redirection` needs |
+| `macrdp-<ver>-aarch64-apple-darwin-app.zip` | the full **`LinaMacRDP.app`**, with the embedded smart-card IFD handler + installer — the only artifact that carries everything `--enable-smartcard-redirection` needs |
 | `SHA256SUMS` | checksums for both |
 
-Both are **ad-hoc signed, not notarized** — open the app once via **right-click → Open** (or `xattr -dr com.apple.quarantine macrdp.app`). For a Developer-ID-signed + notarized build, or the menu-bar controller app (neither is produced in CI), build locally with [packaging/make-app.sh](packaging/README.md).
+Both are **ad-hoc signed, not notarized** — open the app once via **right-click → Open** (or `xattr -dr com.apple.quarantine LinaMacRDP.app`). For a Developer-ID-signed + notarized build, or the menu-bar controller app (neither is produced in CI), build locally with [packaging/make-app.sh](packaging/README.md).
 
 ## Documentation
 

@@ -605,6 +605,13 @@ mod macos {
         right_down: bool,
         middle_down: bool,
         mods: ModifierState,
+        // Last Caps Lock state the client reported in a Synchronize PDU.
+        // mstsc can report a Caps Lock press only as a lock-state change, so
+        // a change here is also treated as a Korean/English toggle.
+        client_caps: Option<bool>,
+        // When the input source was last switched, so a key press and the
+        // matching Synchronize PDU for the same physical press toggle once.
+        last_lang_toggle: Option<Instant>,
         // `None` → use CGDisplay::main() bounds; `Some(id)` → look up
         // that specific display. Re-queried (through a short TTL cache —
         // see `target_bounds`) so a mid-session bounds change (e.g.
@@ -714,6 +721,8 @@ mod macos {
                 right_down: false,
                 middle_down: false,
                 mods: ModifierState::default(),
+                client_caps: None,
+                last_lang_toggle: None,
                 target_display_id,
                 cached_bounds: None,
                 bounds_cached_at: Instant::now(),
@@ -780,6 +789,17 @@ mod macos {
         /// concepts on Windows that macOS doesn't model.)
         fn synchronize(&mut self, sync: SynchronizeFlags) {
             let want_caps = sync.contains(SynchronizeFlags::CAPS_LOCK);
+            let prev = self.client_caps.replace(want_caps);
+            if crate::keyboard_layout::korean_input_enabled() {
+                // With Korean enabled, the client's Caps Lock is a language
+                // toggle, never macOS AlphaShift.
+                tracing::info!(?prev, want_caps, "client Caps Lock state sync");
+                if prev.is_some_and(|p| p != want_caps) {
+                    self.toggle_language();
+                }
+                self.clear_alpha_shift();
+                return;
+            }
             if want_caps != self.mods.caps_lock {
                 debug!(
                     have = self.mods.caps_lock,
@@ -828,7 +848,35 @@ mod macos {
             };
         }
 
+        /// Switch Korean/English once per physical press: a key event and the
+        /// Synchronize PDU describing the same press arrive close together.
+        fn toggle_language(&mut self) {
+            const DEDUPE: Duration = Duration::from_millis(500);
+            if self.last_lang_toggle.is_some_and(|t| t.elapsed() < DEDUPE) {
+                return;
+            }
+            if crate::keyboard_layout::toggle_korean_english() {
+                self.last_lang_toggle = Some(Instant::now());
+            }
+        }
+
+        fn clear_alpha_shift(&mut self) {
+            if self.mods.caps_lock {
+                self.mods.caps_lock = false;
+                self.post_flags_changed(VK_CAPS_LOCK);
+            }
+        }
+
         fn key(&mut self, scancode: u8, extended: bool, down: bool) {
+            // Korean keyboards send the dedicated Hangul (한/영) key as
+            // scancode 0x72 (or 0xF2); it has no macOS keycode.
+            if scancode == 0x72 || scancode == 0xF2 {
+                tracing::info!(scancode, extended, down, "client Hangul key");
+                if down {
+                    self.toggle_language();
+                }
+                return;
+            }
             let Some(vk) = scancode_to_cgkeycode(scancode, extended) else {
                 tracing::debug!(scancode, extended, down, "unmapped scancode");
                 return;
@@ -840,6 +888,19 @@ mod macos {
             // symbolic-hotkey logic so the held-modifier check in
             // try_symbolic_hotkey sees the just-pressed modifier.
             if ModifierState::is_modifier_vk(vk) {
+                if vk == VK_CAPS_LOCK && crate::keyboard_layout::korean_input_enabled() {
+                    // A remote Caps Lock press switches the actual macOS input
+                    // source instead of uppercasing the following English text.
+                    tracing::info!(down, "client Caps Lock key");
+                    if down {
+                        self.toggle_language();
+                    }
+                    self.clear_alpha_shift();
+                    return;
+                }
+                if vk == VK_CAPS_LOCK && !down {
+                    return;
+                }
                 let changed = self.mods.apply(vk, down);
                 tracing::debug!(
                     scancode = format!("0x{scancode:02X}"),
